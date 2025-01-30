@@ -101,11 +101,11 @@ class CoverageReporter:
                     os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin','swagger-coverage-output'))
             shutil.copy(
                 os.path.join(
-                    os.getcwd(), 'swagger-coverage-config-dm-api-account.json'),
+                    os.getcwd(),'swagger-coverage-config-dm-api-account.json'),
                     os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin'))
             shutil.copy(
                 os.path.join(
-                    os.getcwd(), 'tests','swagger-doc-dm-api-account.json'),
+                    os.getcwd(),'swagger-doc-dm-api-account.json'),
                     os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin'))
             subprocess.run(
                 ['sh', 'swagger-coverage-commandline',
