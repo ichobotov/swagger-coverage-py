@@ -13,6 +13,7 @@ from swagger_coverage_py.configs import API_DOCS_FORMAT, DEBUG_MODE
 from swagger_coverage_py.docs_writers.api_doc_writer import write_api_doc_to_file
 
 
+
 class CoverageReporter:
     def __init__(self, api_name: str, host: str, verify: bool = True):
         self.host = host
@@ -24,8 +25,11 @@ class CoverageReporter:
 
     def __get_output_dir(self):
         output_dir = "swagger-coverage-output"
-        subdir = re.match(r"(^\w*)://(.*)", self.host).group(2)
-        return f"{output_dir}/{subdir}"
+        subdir = re.match(r"(^\w*)://(.*)", self.host).group(2).replace('.','_').replace(':','_')
+        if platform.system() == "Windows":
+            return f"{output_dir}\\{subdir}"
+        else:
+            return f"{output_dir}/{subdir}"
 
     def __get_ignored_paths_from_config(self) -> List[str]:
         """Reads the swagger-coverage-config-<api_name>.json file and returns
@@ -36,7 +40,8 @@ class CoverageReporter:
         if not self.swagger_coverage_config:
             return paths_to_ignore
 
-        with open(self.swagger_coverage_config, "r") as file:
+        print("Ignored paths-----", paths_to_ignore)
+        with open((Path(__file__).resolve().parents[4]).joinpath(f'{self.swagger_coverage_config}'), "r") as file:
             data = json.load(file)
             paths = data.get("rules").get("paths", {})
             if paths.get("enable", False):
@@ -87,15 +92,51 @@ class CoverageReporter:
         # Adjust the file paths for Windows
         if platform.system() == "Windows":
             command = [arg.replace("/", "\\") for arg in command]
-        
-        # Suppress all output if not in debug mode
-        if not DEBUG_MODE:
-            with open(os.devnull, 'w') as devnull:
-                subprocess.run(command, stdout=devnull, stderr=devnull)
+        if platform.system() == "Windows":
+            os.chdir(Path(__file__).resolve().parents[4])
+            shutil.copy(os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin','swagger-coverage-commandline'), os.getcwd())
+            shutil.copy(os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin','swagger-coverage-commandline.bat'), os.getcwd())
+            shutil.copytree(
+                os.path.join( os.getcwd(), 'swagger-coverage-output'),
+                    os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin','swagger-coverage-output'))
+            shutil.copy(
+                os.path.join(
+                    os.getcwd(), 'swagger-coverage-config-dm-api-account.json'),
+                    os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin'))
+            shutil.copy(
+                os.path.join(
+                    os.getcwd(), 'tests','swagger-doc-dm-api-account.json'),
+                    os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin'))
+            subprocess.run(
+                ['sh', 'swagger-coverage-commandline',
+                 '-s', self.swagger_doc_file,
+                 '-i', self.output_dir,
+                 '-c', self.swagger_coverage_config],
+                cwd=os.path.join(os.path.dirname(__file__), 'swagger-coverage-commandline','bin')
+            )
+            if Path(os.path.join(os.getcwd(),'swagger-coverage-report-dm-api-account.html')).exists():
+                os.remove('swagger-coverage-report-dm-api-account.html')
+            shutil.move(
+                os.path.join(
+                    os.path.dirname(__file__), 'swagger-coverage-commandline', 'bin', 'swagger-coverage-report-dm-api-account.html'
+                    ), os.getcwd()
+                )
+            os.remove('swagger-coverage-commandline')
+            os.remove('swagger-coverage-commandline.bat')
+            os.remove(os.path.join(os.path.dirname(__file__),'swagger-coverage-commandline','bin', 'swagger-coverage-config-dm-api-account.json'))
+            os.remove(os.path.join(os.path.dirname(__file__), 'swagger-coverage-commandline', 'bin','swagger-doc-dm-api-account.json'))
+            shutil.rmtree(os.path.join(os.path.dirname(__file__), 'swagger-coverage-commandline', 'bin','swagger-coverage-output'))
         else:
-            subprocess.run(command)
+            # Suppress all output if not in debug mode
+            if not DEBUG_MODE:
+                with open(os.devnull, 'w') as devnull:
+                    subprocess.run(command, stdout=devnull, stderr=devnull)
+            else:
+                subprocess.run(command)
+
 
 
     def cleanup_input_files(self):
         shutil.rmtree(self.output_dir, ignore_errors=True)
-        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+        # Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+        (Path(__file__).resolve().parents[5]).joinpath(self.output_dir).mkdir(parents=True, exist_ok=True)
