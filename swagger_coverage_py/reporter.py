@@ -41,7 +41,11 @@ class CoverageReporter:
             return paths_to_ignore
 
         print("Ignored paths-----", paths_to_ignore)
-        with open((Path(__file__).resolve().parents[4]).joinpath(f'{self.swagger_coverage_config}'), "r") as file:
+        if platform.system() == "Windows":
+            conf_file = (Path(__file__).resolve().parents[4]).joinpath(f'{self.swagger_coverage_config}')
+        else:
+            conf_file = self.swagger_coverage_config
+        with open(conf_file, "r") as file:
             data = json.load(file)
             paths = data.get("rules").get("paths", {})
             if paths.get("enable", False):
