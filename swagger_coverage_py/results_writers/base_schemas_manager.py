@@ -138,8 +138,11 @@ class ApiDocsManagerBase:
             "/", "-"
         ).replace(":", "_")
         path_ = f"swagger-coverage-output/{self.__get_output_subdir()}"
-        path_ = (Path(__file__).resolve().parents[5]).joinpath(path_)
-        (Path(__file__).resolve().parents[5]).joinpath(path_).mkdir(parents=True, exist_ok=True)
+        if platform.system() == "Windows":
+            path_ = (Path(__file__).resolve().parents[5]).joinpath(path_)
+            (Path(__file__).resolve().parents[5]).joinpath(path_).mkdir(parents=True, exist_ok=True)
+        else:
+            Path(path_).mkdir(parents=True, exist_ok=True)
         file_path = f"{path_}/{file_name}".split("?")[0]
         file_path = f"{file_path}_({rnd}).{API_DOCS_FORMAT}"
         try:
